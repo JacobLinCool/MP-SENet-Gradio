@@ -1,0 +1,11 @@
+title: MP-SENet
+short_description: MP-SENet is a speech enhancement model.
+emoji: 🔊
+colorFrom: green
+colorTo: green
+sdk: gradio
+sdk_version: 4.37.2
+app_file: app.py
+pinned: false
+license: mit
+fullWidth: true
