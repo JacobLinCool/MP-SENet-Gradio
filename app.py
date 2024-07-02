@@ -1,3 +1,4 @@
+import time
 import torch
 import librosa
 from librosa.display import specshow
@@ -74,17 +75,28 @@ def process_segment(segment: np.ndarray) -> np.ndarray:
 
 @zero
 def run(input: str) -> Tuple[Tuple[int, np.ndarray], np.ndarray, np.ndarray]:
+    start_time = time.time()
     noisy_wav, _ = librosa.load(input, sr=h.sampling_rate)
+    print(f"Loaded audio in {time.time() - start_time:.2f} seconds")
+
+    start_time = time.time()
     segment_samples = segment_duration * h.sampling_rate
     segments = [
         noisy_wav[i : i + segment_samples]
         for i in range(0, len(noisy_wav), segment_samples)
     ]
+    print(f"Segmented audio in {time.time() - start_time:.2f} seconds")
+
+    start_time = time.time()
     processed_segments = [process_segment(segment) for segment in segments]
+    print(f"Inference in {time.time() - start_time:.2f} seconds")
+
     processed_wav = np.concatenate(processed_segments)
 
+    start_time = time.time()
     noisy_spec = plot_spec(noisy_wav, title="Original Spectrogram")
     out_spec = plot_spec(processed_wav, title="Processed Spectrogram")
+    print(f"Plotted spectrograms in {time.time() - start_time:.2f} seconds")
 
     return ((h.sampling_rate, processed_wav), noisy_spec, out_spec)
 
