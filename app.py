@@ -96,7 +96,9 @@ with gr.Blocks() as app:
 
     with gr.Row():
         with gr.Column():
-            input = gr.Audio(label="Upload an audio file", type="filepath")
+            input = gr.Audio(
+                label="Upload an audio file", type="filepath", show_download_button=True
+            )
             original_spec = gr.Plot(label="Original Spectrogram")
             btn = gr.Button(value="Process", variant="primary")
 
