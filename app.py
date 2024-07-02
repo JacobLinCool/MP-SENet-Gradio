@@ -1,3 +1,4 @@
+import random
 import time
 import torch
 import librosa
@@ -41,6 +42,13 @@ model.eval()
 segment_duration = 10 if zero_is_available else 3  # seconds
 
 
+tasks = {}
+
+
+def gen_task_id():
+    return str(int(time.time())) + str(random.randint(1000, 9999))
+
+
 def plot_spec(y: np.ndarray, title: str = "Spectrogram") -> plt.Figure:
     y[np.isnan(y)] = 0
     y[np.isinf(y)] = 0
@@ -73,11 +81,32 @@ def process_segment(segment: np.ndarray) -> np.ndarray:
     return audio_g
 
 
-@zero
-def run(input: str) -> Tuple[Tuple[int, np.ndarray], np.ndarray, np.ndarray]:
+def preprocess(input: str, plot: bool) -> Tuple[str, str]:
     start_time = time.time()
     noisy_wav, _ = librosa.load(input, sr=h.sampling_rate)
     print(f"Loaded audio in {time.time() - start_time:.2f} seconds")
+
+    task_id = gen_task_id()
+    tasks[task_id] = {
+        "noisy_wav": noisy_wav,
+        "plot": plot,
+    }
+
+    return (task_id, "Processing ...")
+
+
+@zero
+def run(task_id: str) -> Tuple[Tuple[int, np.ndarray], np.ndarray, np.ndarray, str]:
+    task = tasks[task_id]
+    if not task:
+        raise gr.Error("Task not found")
+    if not "noisy_wav" in task:
+        del tasks[task_id]
+        raise gr.Error("No audio found")
+
+    noisy_wav = task["noisy_wav"]
+    plot = task["plot"] if "plot" in task else True
+    del tasks[task_id]
 
     start_time = time.time()
     segment_samples = segment_duration * h.sampling_rate
@@ -93,12 +122,16 @@ def run(input: str) -> Tuple[Tuple[int, np.ndarray], np.ndarray, np.ndarray]:
 
     processed_wav = np.concatenate(processed_segments)
 
-    start_time = time.time()
-    noisy_spec = plot_spec(noisy_wav, title="Original Spectrogram")
-    out_spec = plot_spec(processed_wav, title="Processed Spectrogram")
-    print(f"Plotted spectrograms in {time.time() - start_time:.2f} seconds")
+    if plot:
+        start_time = time.time()
+        noisy_spec = plot_spec(noisy_wav, title="Original Spectrogram")
+        out_spec = plot_spec(processed_wav, title="Processed Spectrogram")
+        print(f"Plotted spectrograms in {time.time() - start_time:.2f} seconds")
+    else:
+        print("Skipping plotting")
+        noisy_spec = out_spec = None
 
-    return ((h.sampling_rate, processed_wav), noisy_spec, out_spec)
+    return ((h.sampling_rate, processed_wav), noisy_spec, out_spec, "Processed.")
 
 
 with gr.Blocks() as app:
@@ -111,17 +144,32 @@ with gr.Blocks() as app:
             input = gr.Audio(
                 label="Upload an audio file", type="filepath", show_download_button=True
             )
-            original_spec = gr.Plot(label="Original Spectrogram")
-            btn = gr.Button(value="Process", variant="primary")
+            plot = gr.Checkbox(label="Plot Spectrograms", value=True)
 
         with gr.Column():
+            original_spec = gr.Plot(label="Original Spectrogram")
+
+    with gr.Row():
+        btn = gr.Button(value="Process", variant="primary")
+        task_id = gr.Textbox(label="Task ID", visible=False)
+    with gr.Row():
+        info = gr.Markdown("Press the button to process the audio.")
+
+    with gr.Row():
+        with gr.Column():
             output = gr.Audio(label="Processed Audio")
+        with gr.Column():
             processed_spec = gr.Plot(label="Processed Spectrogram")
 
     btn.click(
+        fn=preprocess,
+        inputs=[input, plot],
+        outputs=[task_id, info],
+        api_name="preprocess",
+    ).success(
         fn=run,
-        inputs=[input],
-        outputs=[output, original_spec, processed_spec],
+        inputs=[task_id],
+        outputs=[output, original_spec, processed_spec, info],
         api_name="run",
     )
 
