@@ -91,11 +91,12 @@ def preprocess(input: str, plot: bool) -> Tuple[str, str]:
         "noisy_wav": noisy_wav,
         "plot": plot,
     }
+    print(f"Task {task_id} created.")
 
     return (task_id, "Processing ...")
 
 
-@zero
+@zero()
 def run(task_id: str) -> Tuple[Tuple[int, np.ndarray], np.ndarray, np.ndarray, str]:
     task = tasks[task_id]
     if not task:
@@ -107,6 +108,7 @@ def run(task_id: str) -> Tuple[Tuple[int, np.ndarray], np.ndarray, np.ndarray, s
     noisy_wav = task["noisy_wav"]
     plot = task["plot"] if "plot" in task else True
     del tasks[task_id]
+    print(f"Processing task {task_id}")
 
     start_time = time.time()
     segment_samples = segment_duration * h.sampling_rate
