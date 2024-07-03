@@ -96,8 +96,9 @@ def preprocess(input: str, plot: bool) -> Tuple[str, str]:
     return (task_id, "Processing ...")
 
 
-@zero()
-def run(task_id: str) -> Tuple[Tuple[int, np.ndarray], np.ndarray, np.ndarray, str]:
+def run_task(
+    task_id: str,
+) -> Tuple[Tuple[int, np.ndarray], np.ndarray, np.ndarray, str]:
     task = tasks[task_id]
     if not task:
         raise gr.Error("Task not found")
@@ -134,6 +135,21 @@ def run(task_id: str) -> Tuple[Tuple[int, np.ndarray], np.ndarray, np.ndarray, s
         noisy_spec = out_spec = None
 
     return ((h.sampling_rate, processed_wav), noisy_spec, out_spec, "Processed.")
+
+
+@zero()
+def run(task_id: str):
+    return run_task(task_id)
+
+
+@zero(duration=60 * 2)
+def run2x(task_id: str):
+    return run_task(task_id)
+
+
+@zero(duration=60 * 4)
+def run4x(task_id: str):
+    return run_task(task_id)
 
 
 with gr.Blocks() as app:
@@ -184,6 +200,32 @@ with gr.Blocks() as app:
             ["examples/p232_232.wav"],
         ],
         inputs=input,
+    )
+
+    btn2x = gr.Button(value="Process", variant="primary", visible=False)
+    btn2x.click(
+        fn=preprocess,
+        inputs=[input, plot],
+        outputs=[task_id, info],
+        api_name="preprocess",
+    ).success(
+        fn=run2x,
+        inputs=[task_id],
+        outputs=[output, original_spec, processed_spec, info],
+        api_name="run2x",
+    )
+
+    btn4x = gr.Button(value="Process", variant="primary", visible=False)
+    btn4x.click(
+        fn=preprocess,
+        inputs=[input, plot],
+        outputs=[task_id, info],
+        api_name="preprocess",
+    ).success(
+        fn=run4x,
+        inputs=[task_id],
+        outputs=[output, original_spec, processed_spec, info],
+        api_name="run4x",
     )
 
     app.launch()
