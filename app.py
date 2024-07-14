@@ -175,7 +175,7 @@ with gr.Blocks() as app:
 
     with gr.Row():
         with gr.Column():
-            output = gr.Audio(label="Processed Audio")
+            output = gr.Audio(label="Processed Audio", format="mp3")
         with gr.Column():
             processed_spec = gr.Plot(label="Processed Spectrogram")
 
