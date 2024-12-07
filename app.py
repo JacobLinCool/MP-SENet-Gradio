@@ -112,7 +112,9 @@ with gr.Blocks() as app:
 
     with gr.Row():
         with gr.Column():
-            output = gr.Audio(label="Processed Audio")
+            output = gr.Audio(
+                label="Processed Audio", show_download_button=True
+            )
         with gr.Column():
             processed_spec = gr.Plot(label="Processed Spectrogram")
 
@@ -120,7 +122,7 @@ with gr.Blocks() as app:
         segment_size = gr.Slider(
             minimum=1,
             maximum=20,
-            value=2,
+            value=10,
             step=1,
             label="Segment Size (seconds)",
             info="The audio will be processed in segments of this size. Larger segments take more memory but may give more consistent results.",
